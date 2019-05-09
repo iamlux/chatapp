@@ -1,17 +1,17 @@
 import React, {Component} from 'react';
-import {Redirect} from  'react-router-dom';
 
 class Login extends Component {
   constructor (props) {
     super(props);
-    this.state = {form: {username: "", password: ""}, error: ""};
+    this.state = {form: {username: "", password: ""}, error: {has: false, message: ""}};
   }
 
   inputChange(e) {
     const form = Object.assign(this.state.form);
     form[e.target.name] = e.target.value;
     this.setState({
-      form
+      form,
+      error: {has: false, message: ""}
     });
   }
 
@@ -27,7 +27,14 @@ class Login extends Component {
     })
     .then(response => response.json())
     .then(response => {
-      console.log(response);
+      if (response.error) {
+          this.setState({
+            error: {has: true, message: response.message}
+          });
+      } else {
+        localStorage.setItem("users", JSON.stringify(response));
+        this.props.history.push('/dashboard');
+      }
     });
   }
 
@@ -44,7 +51,7 @@ class Login extends Component {
           <div className="formgroup">
             <input type="submit" value="Login"/>
           </div>
-          {this.state.error.length > 0 && <p>{this.state.error}</p>}
+          {this.state.error.has && <p className="error">{this.state.error.message}</p>}
         </form>
       </div>
     );

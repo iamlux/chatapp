@@ -34,9 +34,12 @@ app.post('/users/register', (req, res) => {
         return res.json({error: false, message: "User already been registered"});
       } else {
         newUser.save(function (err, data) {
-          const token = jwt.sign({ username: username }, 'shhhhh');
+          const allUsers = User.where("username").ne(username);
           if (err) return res.json({error: true, message: "There was an error while storing user"});
-          return res.json({error: false, message: "User Registered successully", token: token});
+          allUsers.exec(function (err, users) {
+            const token = jwt.sign({ username: username }, 'shhhhh');
+            return res.json({error: false, message: "User Registered successully", token: token, users: allUsers, myDetails: data[0]});
+          });
         });
       }
     });
@@ -45,11 +48,13 @@ app.post('/users/login', (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
     const newUser = new User({username: username, password: password});
-    const registerUser = User.find({username: username}, (err, data) => {
-      console.log(data);
+    const registerUser = User.find({username: username, password: password}, (err, data) => {
       if (data.length > 0) {
-        const token = jwt.sign({ username: username }, 'shhhhh');
-        return res.json({error: false, message: "User login successfully", token: token});
+        const allUsers = User.where("username").ne(username);
+        allUsers.exec(function (err, users) {
+          const token = jwt.sign({ username: username }, 'shhhhh');
+          return res.json({error: false, message: "User login successfully", token: token, users: users, myDetails: data[0]});
+        });
       } else {
         return res.json({error: true, message: "Please check the username and password"});
       }
@@ -64,6 +69,7 @@ server.listen(port, () => {
 io.on('connection', function (socket) {
   socket.emit('welcome', "Welcome to the chat application");
   socket.on('message', function (data) {
-    socket.emit("message_received", data)
+    console.log(data);
+    socket.emit("messages", data);
   });
 });
